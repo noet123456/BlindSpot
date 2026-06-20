@@ -21,7 +21,7 @@ cv2.namedWindow(window_name, cv2.WINDOW_NORMAL) # Cho phép người dùng kéo 
 cv2.resizeWindow(window_name, 1280, 720)
 
 if not cap.isOpened():
-    print(f"Không thể mở camera số {camera_id}. Hãy thử đổi thành 0, 2, hoặc 3.")
+    print(f"Không thể mở camera số {camera_id}.")
     exit()
 
 print("Bắt đầu luồng Segmentation. Nhấn 'q' để thoát.")
