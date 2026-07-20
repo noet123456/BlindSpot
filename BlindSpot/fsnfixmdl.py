@@ -88,8 +88,12 @@ while True:
     cam4 = frame[mid_h:h, mid_w:w]           
 
     batch_frames = [cam1, cam2, cam3, cam4]
-    results = list(model(batch_frames, stream=True, conf=0.5, verbose=False))
-
+    results = []
+    
+    # Cho AI xử lý lần lượt từng khung hình để không bị quá tải Batch Size
+    for cam in batch_frames:
+        res = model(cam, conf=0.5, verbose=False)[0]
+        results.append(res)
     global_max_area = 0
     target_cam_idx = -1
     target_rect_corners = None
