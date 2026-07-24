@@ -77,7 +77,9 @@ while True:
 
 # --- THIẾT LẬP GIAO DIỆN (GUI) ---
 WINDOW_NAME = "Jetson Orin - Smart Surveillance Dashboard"
-cv2.namedWindow(WINDOW_NAME)
+cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
+
+cv2.setWindowProperty(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
 # Biến trạng thái: -1 là chế độ Grid (4 Cam), 0-3 là chế độ xem đơn (Cam 1-4)
 view_mode = -1
