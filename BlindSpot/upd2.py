@@ -221,7 +221,7 @@ while True:
             # KÍCH HOẠT ÂM THANH NẾU VẬT THỂ QUÁ GẦN
             if wlv2 < current_distance < wlv1:
                 warning_lv1()
-            elif current_distance < wlv2:
+            elif 0 < current_distance < wlv2:
                 warning_lv2()
 
         annotated_frames.append(ann_frame)
