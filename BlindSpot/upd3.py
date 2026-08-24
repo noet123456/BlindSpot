@@ -169,12 +169,23 @@ while True:
         results.append(res)
         global_total_objects += len(res.boxes) if res.boxes is not None else 0
 
-    global_max_area = 0
-    target_cam_idx = -1
-    target_rect_corners = None
-    target_class_id = -1
+    annotated_frames = []
+    
+    # BẢN ĐỒ ÁNH XẠ: Cam 1 -> x, Cam 2 -> y, Cam 3 -> z, Cam 4 -> t
+    sensor_values = [dist_x, dist_y, dist_z, dist_t]
 
+    # XỬ LÝ ĐỘC LẬP TỪNG CAMERA
     for i, result in enumerate(results):
+        ann_frame = result.plot()
+        local_count = len(result.boxes) if result.boxes is not None else 0
+        cv2.putText(ann_frame, f"CAM {i + 1} | Obj: {local_count}", (20, 40), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 255), 2, cv2.LINE_AA)
+
+        # 1. Tìm vật thể lớn nhất TRONG CAMERA HIỆN TẠI (Local)
+        local_max_area = 0
+        local_target_rect = None
+        local_target_class = -1
+
         if result.masks is not None:
             for idx, segment_points in enumerate(result.masks.xy):
                 if len(segment_points) == 0:
@@ -184,41 +195,27 @@ while True:
                 (cx, cy), (bw, bh), angle = rect
                 area = bw * bh
 
-                if area > global_max_area:
-                    global_max_area = area
-                    target_cam_idx = i
-                    target_class_id = int(result.boxes.cls[idx].item())
+                if area > local_max_area:
+                    local_max_area = area
+                    local_target_class = int(result.boxes.cls[idx].item())
                     box = cv2.boxPoints(rect)
-                    target_rect_corners = np.int0(box)
+                    local_target_rect = np.int32(box) # Đã cập nhật thành np.int32 để hết cảnh báo đỏ
 
-    annotated_frames = []
-    
-    # BẢN ĐỒ ÁNH XẠ: Cam 1 -> x, Cam 2 -> y, Cam 3 -> z, Cam 4 -> t
-    sensor_values = [dist_x, dist_y, dist_z, dist_t]
-
-    for i, result in enumerate(results):
-        ann_frame = result.plot()
-        local_count = len(result.boxes) if result.boxes is not None else 0
-        cv2.putText(ann_frame, f"CAM {i + 1} | Obj: {local_count}", (20, 40), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 255), 2, cv2.LINE_AA)
-
-        # Lấy khoảng cách tương ứng với luồng Camera hiện tại
+        # 2. Lấy khoảng cách tương ứng với luồng Camera hiện tại
         cam_distance = sensor_values[i]
 
-        if i == target_cam_idx and target_rect_corners is not None and cam_distance > 0:
-            cv2.drawContours(ann_frame, [target_rect_corners], 0, (0, 255, 0), 2)
-            top_point = target_rect_corners[np.argmin(target_rect_corners[:, 1])]
+        # 3. Vẽ thông số và cảnh báo cho RIÊNG camera này
+        if local_target_rect is not None and cam_distance > 0:
+            cv2.drawContours(ann_frame, [local_target_rect], 0, (0, 255, 0), 2)
+            top_point = local_target_rect[np.argmin(local_target_rect[:, 1])]
             cv2.putText(ann_frame, f"{cam_distance} cm", (top_point[0], top_point[1] - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2, cv2.LINE_AA)
 
-            class_name = model.names[target_class_id]
+            class_name = model.names[local_target_class]
             print(f"[CẢNH BÁO] {class_name.upper()} tại CAM {i + 1} | Dist: {cam_distance}cm | Total: {global_total_objects}")
 
-            if wlv2 < current_distance <= wlv1 and global_total_objects < maximum_warning_objects:
-                warning(1.0)
-            elif 0 < current_distance <= wlv2 and global_total_objects < maximum_warning_objects:
-                warning(0.5)
-
+            if cam_distance < DANGER_DISTANCE:
+                play_custom_audio()
 
         annotated_frames.append(ann_frame)
 
